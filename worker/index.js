@@ -141,7 +141,7 @@ function handleChat(request, env) {
                   if (last429 && !text.trim()) {
                     throw new Error("مدل‌های رایگان OpenRouter موقتاً مشغول‌اند (rate limit)");
                   }
-                } else if (name === "cfai") {
+                } else if ((def.via || name) === "cfai") {
                   for await (const d of chatCfAI(env, def.model, messages, ac.signal)) {
                     text += d;
                     send("chunk", { model: name, delta: d });

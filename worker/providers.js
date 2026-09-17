@@ -23,6 +23,13 @@ export const MODEL_DEFS = {
     label: "Cloudflare Workers AI · GLM-4.7 Flash",
     color: "#fbbf24",
     model: "@cf/zai-org/glm-4.7-flash",
+    via: "cfai",
+  },
+  deepseek: {
+    label: "DeepSeek V4 Flash",
+    color: "#60a5fa",
+    model: "@cf/deepseek-ai/deepseek-v4-flash-0731",
+    via: "cfai",
   },
 };
 

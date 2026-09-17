@@ -96,9 +96,9 @@ header {
 main {
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(300px, 420px) 1fr;
-  gap: 16px;
-  padding: 16px 20px;
+  grid-template-rows: minmax(280px, 44vh) minmax(0, 1fr);
+  gap: 14px;
+  padding: 14px 20px;
   min-height: 0;
 }
 
@@ -111,7 +111,6 @@ main {
   overflow: hidden;
   backdrop-filter: blur(14px);
   box-shadow: 0 0 50px rgba(0, 229, 255, 0.05), inset 0 0 40px rgba(0, 229, 255, 0.03);
-  min-height: 300px;
 }
 #hud { position: absolute; inset: 0; width: 100%; height: 100%; }
 #hud-caption {
@@ -278,6 +277,21 @@ main {
   50% { box-shadow: 0 0 0 10px rgba(255, 82, 82, 0); }
 }
 
+.turn-actions { display: flex; }
+.hear-btn {
+  background: rgba(125, 249, 255, 0.08);
+  border: 1px solid rgba(125, 249, 255, 0.3);
+  color: #7df9ff;
+  border-radius: 999px;
+  padding: 5px 16px;
+  font-family: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.hear-btn:disabled { opacity: 0.35; cursor: default; }
+.hear-btn:not(:disabled):hover { background: rgba(125, 249, 255, 0.18); box-shadow: 0 0 14px rgba(125, 249, 255, 0.25); }
+
 /* ── settings modal ── */
 .modal-backdrop {
   position: fixed; inset: 0;
@@ -324,7 +338,7 @@ input[type="checkbox"] { accent-color: var(--cyan); width: 18px; height: 18px; f
 
 /* ── responsive ── */
 @media (max-width: 900px) {
-  main { grid-template-columns: 1fr; grid-template-rows: 210px 1fr; padding: 10px; gap: 10px; }
+  main { grid-template-rows: 235px minmax(0, 1fr); padding: 10px; gap: 10px; }
   .council { grid-template-columns: 1fr; }
   header { padding: 10px 12px; gap: 8px; }
   .brand-fa { display: none; }

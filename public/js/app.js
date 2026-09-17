@@ -10,23 +10,27 @@
   const statusText = $("#status-text");
   const statusPill = $("#status-pill");
   const modelBar = $("#model-bar");
-  const SETTINGS_KEY = "jarvis-settings-v1";
+  const SETTINGS_KEY = "jarvis-settings-v2";
+  const DEFAULT_MODELS = { gemini: true, groq: true, openrouter: true, cfai: true, deepseek: true };
 
   const MODEL_META = {
     gemini: { label: "Gemini", color: "#00e5ff" },
     groq: { label: "Groq", color: "#4ade80" },
     openrouter: { label: "OpenRouter", color: "#a78bfa" },
-    cfai: { label: "Cloudflare AI", color: "#fbbf24" },
+    cfai: { label: "CF AI", color: "#fbbf24" },
+    deepseek: { label: "DeepSeek", color: "#60a5fa" },
   };
 
   let settings = {
-    tts: true,
+    tts: false, // پاسخ صوتی فقط وقتی خودت بخواهی (دکمهٔ 🔊)
     cloudTts: false,
     autoListen: false,
-    models: { gemini: true, groq: true, openrouter: true, cfai: true },
+    models: Object.assign({}, DEFAULT_MODELS),
   };
   try {
-    Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}"));
+    const stored = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
+    Object.assign(settings, stored);
+    settings.models = Object.assign(Object.assign({}, DEFAULT_MODELS), stored.models || {});
   } catch {}
   const save = () => localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 
@@ -72,6 +76,10 @@
     return Object.keys(settings.models).filter((k) => settings.models[k]);
   }
 
+  function updateHudModels() {
+    JHUD.setModels(activeModels().map((id) => ({ id, label: MODEL_META[id].label, color: MODEL_META[id].color })));
+  }
+
   // ── model chips ──
   function renderModelBar() {
     modelBar.innerHTML = "";
@@ -90,6 +98,7 @@
       };
       modelBar.appendChild(chip);
     }
+    updateHudModels();
   }
 
   // ── chat rendering ──
@@ -128,9 +137,14 @@
     const consensus = el("div", "consensus hidden");
     consensus.innerHTML = `<div class="cons-head">⚡ پاسخ نهایی جاریس</div><div class="cons-body"></div>`;
     wrap.appendChild(consensus);
+    const actions = el("div", "turn-actions");
+    const hear = el("button", "hear-btn", "🔊 شنیدن پاسخ");
+    hear.disabled = true;
+    actions.appendChild(hear);
+    wrap.appendChild(actions);
     chatEl.appendChild(wrap);
     scrollBottom();
-    return { cards, consensus, consBody: consensus.querySelector(".cons-body") };
+    return { cards, consensus, consBody: consensus.querySelector(".cons-body"), hear };
   }
 
   // ── SSE client ──
@@ -186,8 +200,15 @@
     autosize();
     addUser(text);
     messages.push({ role: "user", content: text });
-    const { cards, consensus, consBody } = addCouncil(models);
+    const turn = addCouncil(models);
+    const { cards, consensus, consBody } = turn;
     setStatus("thinking");
+    models.forEach((id) => JHUD.setModelState(id, "active"));
+    turn.hear.onclick = () => {
+      if (!turn.hearText) return;
+      setStatus("speaking");
+      JVoice.speak(turn.hearText, { cloud: settings.cloudTts, onEnd: () => setStatus("idle") });
+    };
     let finalText = "";
     let firstAnswer = "";
 
@@ -207,7 +228,9 @@
             const c = cards[j.model];
             if (!c) return;
             c.status.textContent = "✓ کامل";
+            JHUD.setModelState(j.model, "done");
             if (j.text && !firstAnswer) firstAnswer = j.text;
+            if (j.text) { turn.hearText = j.text; turn.hear.disabled = false; }
           },
           error: (j) => {
             const c = cards[j.model];
@@ -215,11 +238,14 @@
             c.card.classList.add("error");
             c.status.textContent = "خطا";
             c.body.innerHTML = `<span class="err">${escapeHtml(j.error)}</span>`;
+            JHUD.setModelState(j.model, "error");
           },
           consensus: (j) => {
             consensus.classList.remove("hidden");
             consBody.innerHTML = escapeHtml(j.text);
             finalText = j.text;
+            turn.hearText = j.text;
+            turn.hear.disabled = false;
             scrollBottom();
           },
           consensus_error: (j) => {
