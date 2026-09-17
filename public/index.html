@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#030b1f" />
+<title>JARVIS — دستیار جاریس</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='none' stroke='%2300e5ff' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%2300e5ff'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div id="scanlines"></div>
+
+<header>
+  <div class="brand">
+    <span class="brand-dot"></span>
+    <h1>JARVIS</h1>
+    <span class="brand-fa">دستیار جاریس</span>
+  </div>
+  <div id="status-pill" class="pill" data-state="idle">
+    <span class="pill-dot"></span>
+    <span id="status-text">آماده</span>
+  </div>
+  <button id="btn-settings" class="icon-btn" title="تنظیمات">⚙</button>
+</header>
+
+<main>
+  <section id="hud-panel">
+    <canvas id="hud"></canvas>
+    <div id="hud-caption">S.Y.S · J.A.R.V.I.S</div>
+  </section>
+
+  <section id="chat-panel">
+    <div id="chat"></div>
+    <div id="composer">
+      <div id="model-bar"></div>
+      <div class="composer-row">
+        <button id="btn-mic" class="icon-btn mic" title="مکالمه صوتی — بزن و حرف بزن">🎙</button>
+        <textarea id="input" rows="1" placeholder="به جاریس بگو…"></textarea>
+        <button id="btn-send" class="send-btn">ارسال</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="settings" class="modal-backdrop hidden">
+  <div class="modal">
+    <h2>⚙ تنظیمات</h2>
+    <label class="row"><span>پاسخ صوتی (خواندن پاسخ‌ها)</span><input type="checkbox" id="opt-tts" /></label>
+    <label class="row"><span>صدای ابریِ باکیفیت (Gemini TTS)</span><input type="checkbox" id="opt-cloudtts" /></label>
+    <label class="row"><span>گوش‌دادن خودکار بعد از هر پاسخ</span><input type="checkbox" id="opt-autolisten" /></label>
+    <div class="section-title">مدل‌های فعال — «شورای خبرگان»</div>
+    <div id="opt-models"></div>
+    <div class="muted" id="model-status">در حال بررسی وضعیت سرور…</div>
+    <button id="btn-close-settings" class="btn">بستن</button>
+  </div>
+</div>
+
+<script src="js/hud.js"></script>
+<script src="js/voice.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
