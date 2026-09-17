@@ -26,9 +26,9 @@ export const MODEL_DEFS = {
     via: "cfai",
   },
   deepseek: {
-    label: "DeepSeek V4 Flash",
+    label: "DeepSeek R1 Distill 32B (Workers AI)",
     color: "#60a5fa",
-    model: "@cf/deepseek-ai/deepseek-v4-flash-0731",
+    model: "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
     via: "cfai",
   },
 };
