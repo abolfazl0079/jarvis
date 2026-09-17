@@ -20,9 +20,9 @@ export const MODEL_DEFS = {
     model: null, // به‌صورت داینامیک انتخاب می‌شود (مدل‌های free مدام عوض می‌شوند)
   },
   cfai: {
-    label: "Cloudflare Workers AI",
+    label: "Cloudflare Workers AI · GLM-4.7 Flash",
     color: "#fbbf24",
-    model: "@cf/meta/llama-3.1-8b-instruct",
+    model: "@cf/zai-org/glm-4.7-flash",
   },
 };
 
@@ -162,20 +162,38 @@ export async function resolveOpenRouterModel(signal) {
 }
 
 // ─── Cloudflare Workers AI (non-streaming) ────────────────────
-export async function chatCfAI(env, model, messages, signal) {
+export async function* chatCfAI(env, model, messages, signal) {
   if (!env || !env.AI) {
     throw new Error("Workers AI فقط در نسخه‌ی دپلوی‌شده فعال است (env.AI در dev محلی نیست)");
   }
-  const res = await env.AI.run(
-    model,
-    {
-      messages: [{ role: "system", content: systemPrompt() }, ...messages],
-      temperature: 0.7,
-      max_tokens: 2048,
-    },
-    { signal }
-  );
-  return typeof res.response === "string" ? res.response : "";
+  const msgs = [{ role: "system", content: systemPrompt() }, ...messages];
+  let got = false;
+  try {
+    const stream = await env.AI.run(
+      model,
+      { messages: msgs, temperature: 0.7, max_tokens: 2048, stream: true },
+      { signal }
+    );
+    for await (const data of sseData(stream)) {
+      try {
+        const j = JSON.parse(data);
+        const delta = j?.choices?.[0]?.delta?.content;
+        if (delta) {
+          got = true;
+          yield delta;
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+  } catch (e) {
+    if (!got) throw e;
+  }
+  if (!got) {
+    const res = await env.AI.run(model, { messages: msgs, temperature: 0.7, max_tokens: 2048 }, { signal });
+    const full = typeof res.response === "string" ? res.response : "";
+    if (full) yield full;
+  }
 }
 
 // ─── Speech-to-Text ───────────────────────────────────────────

@@ -142,10 +142,9 @@ function handleChat(request, env) {
                     throw new Error("مدل‌های رایگان OpenRouter موقتاً مشغول‌اند (rate limit)");
                   }
                 } else if (name === "cfai") {
-                  const full = await chatCfAI(env, def.model, messages, ac.signal);
-                  if (full) {
-                    text = full;
-                    send("chunk", { model: name, delta: full });
+                  for await (const d of chatCfAI(env, def.model, messages, ac.signal)) {
+                    text += d;
+                    send("chunk", { model: name, delta: d });
                   }
                 }
                 results[name] = text;
@@ -263,6 +262,51 @@ function handleHealth(env) {
   });
 }
 
+// ─── صفحهٔ تشخیصی وقتی assets وصل نیست ────────────────────────
+function assetsMissingPage(env) {
+  const keys = Object.keys(env).join("، ");
+  const ok = "ok";
+  const bad = "err";
+  const mark = (b) => (b ? `<span class="${ok}">✓</span>` : `<span class="${bad}">✗</span>`);
+  return new Response(
+    `<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>جاریس — اتصال فایل‌های سایت</title>
+<style>
+body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:radial-gradient(900px 600px at 70% -10%,#07203f 0%,#030b1f 50%,#010409 100%);color:#d7f4ff;line-height:2;min-height:100vh;margin:0}
+.wrap{max-width:720px;margin:0 auto;padding:40px 18px}
+h1{color:#fff;font-size:21px}
+.panel{border:1px solid rgba(0,229,255,.25);border-radius:18px;padding:20px;background:rgba(8,24,48,.55);margin-top:16px}
+.ok{color:#4ade80;font-weight:700}.err{color:#ff7b7b;font-weight:700}.amber{color:#ffb300}
+code{direction:ltr;unicode-bidi:embed;background:#0a1c33;border:1px solid rgba(0,229,255,.2);border-radius:6px;padding:1px 8px;font-size:12.5px;color:#fff}
+.steps{counter-reset:s;list-style:none;padding:0;margin:8px 0 0}
+.steps li{position:relative;padding:8px 34px 8px 0;font-size:14px}
+.steps li::before{counter-increment:s;content:counter(s,persian);position:absolute;inset-inline-start:0;top:10px;width:24px;height:24px;border-radius:50%;background:#00c8e6;color:#031018;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:13px}
+</style></head>
+<body><div class="wrap">
+<h1>📦 مغز جاریس روشن است — فقط «بدن» (فایل‌های سایت) وصل نشده</h1>
+<p>خبر خوب: سرور و کلیدها <b class="ok">کاملاً سالم</b> هستند (اپی‌آی جواب می‌دهد). فقط فایل‌های داخل پوشهٔ <code>public</code> به این Worker متصل نیستند.</p>
+<div class="panel">
+  <p class="amber" style="margin:0">بررسی خودکار وضعیت:</p>
+  <p style="margin:4px 0 0">فایل‌های سایت (ASSETS): ${mark(env.ASSETS)} &nbsp;·&nbsp; Workers AI: ${mark(env.AI)} &nbsp;·&nbsp; کلیدها: Gemini ${mark(env.GEMINI_API_KEY)} Groq ${mark(env.GROQ_API_KEY)} OpenRouter ${mark(env.OPENROUTER_API_KEY)}</p>
+</div>
+<div class="panel">
+  <p class="amber" style="margin:0">راه‌حل — بدون کد، فقط درگ‌ودراپ:</p>
+  <ol class="steps">
+    <li>در داشبورد کلودفلر، وارد <b>Settings</b> کار <b>jarvis</b> شو</li>
+    <li>بخش <b>Static assets</b> را باز کن</li>
+    <li>روی <b>Upload assets</b> بزن و <b>محتویات</b> پوشهٔ <code>public</code> را درگ کن: فایل <code>index.html</code> به‌همراه پوشه‌های <code>css</code>، <code>js</code> و <code>fonts</code></li>
+    <li>دکمهٔ <b>Deploy</b> را بزن و این صفحه را دوباره باز کن 🎉</li>
+  </ol>
+</div>
+<p style="font-size:12.5px;color:#7fa3c2">Binding‌های موجود روی این Worker: <code>${keys}</code></p>
+</div></body></html>`,
+    { headers: { "Content-Type": "text/html; charset=utf-8" } }
+  );
+}
+
 // ─── Router ────────────────────────────────────────────────────
 export default {
   async fetch(request, env) {
@@ -274,7 +318,12 @@ export default {
     if (request.method === "POST" && url.pathname === "/api/stt") return handleStt(request, env);
     if (request.method === "POST" && url.pathname === "/api/tts") return handleTts(request, env);
     if (request.method === "GET" && url.pathname === "/api/health") return handleHealth(env);
-    // بقیه‌ی مسیرها → فایل‌های استاتیک
-    return env.ASSETS.fetch(request);
+    // بقیه‌ی مسیرها → فایل‌های استاتیک (اگر وصل نباشد، صفحهٔ راهنما به‌جای خطا)
+    try {
+      if (env.ASSETS) return await env.ASSETS.fetch(request);
+    } catch {
+      /* fall through */
+    }
+    return assetsMissingPage(env);
   },
 };

@@ -23,7 +23,7 @@
     tts: true,
     cloudTts: false,
     autoListen: false,
-    models: { gemini: true, groq: true, openrouter: true, cfai: false },
+    models: { gemini: true, groq: true, openrouter: true, cfai: true },
   };
   try {
     Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}"));
